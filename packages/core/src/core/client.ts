@@ -14,6 +14,8 @@ import type {
   Tool,
 } from '@google/genai';
 import process from 'node:process';
+// [exptech-fork] readFileSync for main-chat output-language injection — see CLAUDE.md §Fork edits
+import { readFileSync } from 'node:fs';
 
 // Config
 import { ApprovalMode, type Config } from '../config/config.js';
@@ -756,6 +758,10 @@ export class GeminiClient {
     const overrideSystemPrompt = this.config.getSystemPrompt();
     const appendSystemPrompt = this.config.getAppendSystemPrompt();
     const gitStatus = this.getCachedGitStatus();
+    // [exptech-fork] inject the output-language directive into the MAIN chat
+    // (upstream only injects it into side queries). See CLAUDE.md §Fork edits.
+    const langDirective = this.getOutputLanguageDirective();
+    const trailer = [gitStatus, langDirective].filter(Boolean).join('\n\n');
 
     if (overrideSystemPrompt) {
       const base = getCustomSystemPrompt(
@@ -763,7 +769,7 @@ export class GeminiClient {
         userMemory,
         appendSystemPrompt,
       );
-      return gitStatus ? base + '\n\n' + gitStatus : base;
+      return trailer ? base + '\n\n' + trailer : base;
     }
 
     const base = getCoreSystemPrompt(
@@ -771,8 +777,26 @@ export class GeminiClient {
       this.config.getModel(),
       appendSystemPrompt,
     );
-    return gitStatus ? base + '\n\n' + gitStatus : base;
+    return trailer ? base + '\n\n' + trailer : base;
   }
+
+  // [exptech-fork] BEGIN main-chat output-language directive reader — see CLAUDE.md §Fork edits
+  private getOutputLanguageDirective(): string {
+    const p = this.config.getOutputLanguageFilePath?.();
+    if (!p) return '';
+    try {
+      const pref = readFileSync(p, 'utf8').trim();
+      if (!pref) return '';
+      return [
+        'Follow the user-visible output language preference below.',
+        'This preference overrides any earlier language-selection rule in this system instruction.',
+        pref,
+      ].join('\n\n');
+    } catch {
+      return '';
+    }
+  }
+  // [exptech-fork] END
 
   async refreshStartupContextReminder(): Promise<void> {
     if (!this.chat) {

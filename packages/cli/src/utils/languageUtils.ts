@@ -13,10 +13,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Storage } from '@qwen-code/qwen-code-core';
-import {
-  detectSystemLanguage,
-  getLanguageNameFromLocale,
-} from '../i18n/index.js';
+// [exptech-fork] detectSystemLanguage dropped — fork defaults output to zh-TW (see CLAUDE.md §Fork edits)
+import { getLanguageNameFromLocale } from '../i18n/index.js';
 import { SUPPORTED_LANGUAGES } from '../i18n/languages.js';
 
 const LLM_OUTPUT_LANGUAGE_RULE_FILENAME = 'output-language.md';
@@ -39,6 +37,22 @@ export function isAutoLanguage(value: string | undefined | null): boolean {
  */
 export function normalizeOutputLanguage(language: string): string {
   const normalized = language.trim().replace(/_/g, '-').toLowerCase();
+  // [exptech-fork] BEGIN — force an explicit Traditional-Chinese (Taiwan) directive
+  // so the model replies in 繁體中文(台灣用語) instead of defaulting to Simplified.
+  // (Plain "中文"/zh stays Simplified by design.) See CLAUDE.md §Fork edits.
+  if (
+    normalized === 'zh-tw' ||
+    normalized.startsWith('zh-tw') ||
+    normalized === 'zh-hant' ||
+    normalized.startsWith('zh-hant') ||
+    normalized === 'traditional chinese' ||
+    normalized === 'traditional-chinese' ||
+    language.includes('繁體') ||
+    language.includes('繁中')
+  ) {
+    return '繁體中文（台灣用語，Traditional Chinese as used in Taiwan）';
+  }
+  // [exptech-fork] END
   const knownLanguageName = SUPPORTED_LANGUAGES.find(
     (supportedLanguage) =>
       supportedLanguage.fullName.toLowerCase() === normalized,
@@ -75,8 +89,9 @@ export function resolveOutputLanguage(
   value: string | undefined | null,
 ): string {
   if (isAutoLanguage(value)) {
-    const detectedLocale = detectSystemLanguage();
-    return getLanguageNameFromLocale(detectedLocale);
+    // [exptech-fork] fork default model output is 繁體中文(台灣), not system-detected.
+    // See CLAUDE.md §Fork edits.
+    return normalizeOutputLanguage('zh-TW');
   }
   return normalizeOutputLanguage(value!);
 }
@@ -107,6 +122,17 @@ function sanitizeForMarker(language: string): string {
  */
 function generateOutputLanguageFileContent(language: string): string {
   const safeLanguage = sanitizeForMarker(language);
+  // [exptech-fork] BEGIN — extra strictness for Traditional Chinese (Taiwan); the
+  // model otherwise slips into Simplified characters / Mainland vocabulary.
+  // See CLAUDE.md §Fork edits.
+  const traditionalClause = /繁體|traditional/i.test(language)
+    ? `
+
+## 繁體中文（台灣）嚴格規則
+- 只使用**繁體中文字**，絕對不要輸出任何簡體字（例如要寫「為、裡、著、數據、繁體」，不是「为、里、着、数据、繁体」）。
+- 使用**台灣慣用術語**：程式碼、軟體、伺服器、網路、檔案、資料夾、預設、登入、執行、變數、函式、相依套件、儲存庫、最佳化；不要用中國大陸用語（代码、软件、服务器、网络、文件、文件夹、默认、登录、运行、变量、函数、依赖、仓库、优化）。
+- 標點使用全形中文標點（，。、「」（））。`
+    : '';
   return `# Output language preference: ${language}
 <!-- ${LLM_OUTPUT_LANGUAGE_MARKER_PREFIX} ${safeLanguage} -->
 
@@ -123,7 +149,7 @@ Do **not** translate or rewrite:
 - Exact quoted text from the user (keep quotes verbatim)
 
 ## Tool / system outputs
-Raw tool/system outputs may contain fixed-format English. Preserve them verbatim, and if needed, add a short **${language}** explanation below.
+Raw tool/system outputs may contain fixed-format English. Preserve them verbatim, and if needed, add a short **${language}** explanation below.${traditionalClause}
 `;
 }
 

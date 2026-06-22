@@ -134,12 +134,12 @@
             "fr",
             "ca"
           ],
-          "default": "auto"
+          "default": "zh-TW"
         },
         "outputLanguage": {
           "description": "The language for LLM output. Use \"auto\" to detect from system settings, or set a specific language.",
           "type": "string",
-          "default": "auto"
+          "default": "zh-TW"
         },
         "dynamicCommandTranslation": {
           "description": "Enable AI translation for dynamic slash command descriptions. When disabled, dynamic commands use their original descriptions and do not trigger translation model calls.",

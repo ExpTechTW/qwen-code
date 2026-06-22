@@ -8,6 +8,8 @@ import { createDebugLogger, isGitRepository } from '@qwen-code/qwen-code-core';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as childProcess from 'node:child_process';
+// [exptech-fork] fork updates install from the prebuilt release branch — see CLAUDE.md §Fork edits
+import { FORK_INSTALL_COMMAND } from '../fork/fork-config.js';
 
 export enum PackageManager {
   NPM = 'npm',
@@ -111,7 +113,7 @@ export function getInstallationInfo(
 
     // Check for pnpm
     if (realPath.includes('/.pnpm/global')) {
-      const updateCommand = 'pnpm add -g @qwen-code/qwen-code@latest';
+      const updateCommand = FORK_INSTALL_COMMAND; // [exptech-fork] git-release install
       return {
         packageManager: PackageManager.PNPM,
         isGlobal: true,
@@ -124,7 +126,7 @@ export function getInstallationInfo(
 
     // Check for yarn
     if (realPath.includes('/.yarn/global')) {
-      const updateCommand = 'yarn global add @qwen-code/qwen-code@latest';
+      const updateCommand = FORK_INSTALL_COMMAND; // [exptech-fork] git-release install
       return {
         packageManager: PackageManager.YARN,
         isGlobal: true,
@@ -144,7 +146,7 @@ export function getInstallationInfo(
       };
     }
     if (realPath.includes('/.bun/bin')) {
-      const updateCommand = 'bun add -g @qwen-code/qwen-code@latest';
+      const updateCommand = FORK_INSTALL_COMMAND; // [exptech-fork] git-release install
       return {
         packageManager: PackageManager.BUN,
         isGlobal: true,
@@ -198,11 +200,12 @@ export function getInstallationInfo(
         packageManager: PackageManager.NPM,
         isGlobal: true,
         updateMessage:
-          'Update requires sudo. Please run: sudo npm install -g @qwen-code/qwen-code@latest',
+          // [exptech-fork] git-release install
+          `Update requires sudo. Please run: sudo ${FORK_INSTALL_COMMAND}`,
       };
     }
 
-    const updateCommand = 'npm install -g @qwen-code/qwen-code@latest';
+    const updateCommand = FORK_INSTALL_COMMAND; // [exptech-fork] git-release install
     return {
       packageManager: PackageManager.NPM,
       isGlobal: true,

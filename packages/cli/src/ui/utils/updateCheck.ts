@@ -4,11 +4,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// [exptech-fork] This file is fork-owned: the upstream version checks the npm
+// registry (@qwen-code/qwen-code) via update-notifier, which would nag fork
+// users toward the UPSTREAM release. The fork ships via the prebuilt `release`
+// branch, so we check that branch's package.json version instead and point the
+// user at FORK_INSTALL_COMMAND. On upstream merges, reconcile per CLAUDE.md
+// §Fork edits (this whole file is intentionally divergent).
+
 import type { UpdateInfo } from 'update-notifier';
-import updateNotifier from 'update-notifier';
 import semver from 'semver';
 import { getPackageJson } from '../../utils/package.js';
 import { createDebugLogger } from '@qwen-code/qwen-code-core';
+import {
+  FORK_RELEASE_PACKAGE_JSON_URL,
+  FORK_INSTALL_COMMAND,
+} from '../../fork/fork-config.js';
 
 const debugLogger = createDebugLogger('UPDATE_CHECK');
 
@@ -19,29 +29,6 @@ export interface UpdateObject {
   update: UpdateInfo;
 }
 
-/**
- * From a nightly and stable update, determines which is the "best" one to offer.
- * The rule is to always prefer nightly if the base versions are the same.
- */
-function getBestAvailableUpdate(
-  nightly?: UpdateInfo,
-  stable?: UpdateInfo,
-): UpdateInfo | null {
-  if (!nightly) return stable || null;
-  if (!stable) return nightly || null;
-
-  const nightlyVer = nightly.latest;
-  const stableVer = stable.latest;
-
-  if (
-    semver.coerce(stableVer)?.version === semver.coerce(nightlyVer)?.version
-  ) {
-    return nightly;
-  }
-
-  return semver.gt(stableVer, nightlyVer) ? stable : nightly;
-}
-
 export async function checkForUpdates(): Promise<UpdateObject | null> {
   try {
     // Skip update check when running from source (development mode)
@@ -49,51 +36,43 @@ export async function checkForUpdates(): Promise<UpdateObject | null> {
       return null;
     }
     const packageJson = await getPackageJson();
-    if (!packageJson || !packageJson.name || !packageJson.version) {
+    const currentVersion = packageJson?.version;
+    const name = packageJson?.name ?? '@qwen-code/qwen-code';
+    if (!currentVersion) {
       return null;
     }
 
-    const { name, version: currentVersion } = packageJson;
-    const isNightly = currentVersion.includes('nightly');
-    const createNotifier = (distTag: 'latest' | 'nightly') =>
-      updateNotifier({
-        pkg: {
-          name,
-          version: currentVersion,
-        },
-        updateCheckInterval: 0,
-        shouldNotifyInNpmScript: true,
-        distTag,
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    let latest: string | undefined;
+    try {
+      const resp = await fetch(FORK_RELEASE_PACKAGE_JSON_URL, {
+        signal: controller.signal,
+        headers: { accept: 'application/json' },
       });
-
-    if (isNightly) {
-      const [nightlyUpdateInfo, latestUpdateInfo] = await Promise.all([
-        createNotifier('nightly').fetchInfo(),
-        createNotifier('latest').fetchInfo(),
-      ]);
-
-      const bestUpdate = getBestAvailableUpdate(
-        nightlyUpdateInfo,
-        latestUpdateInfo,
-      );
-
-      if (bestUpdate && semver.gt(bestUpdate.latest, currentVersion)) {
-        const message = `A new version of Qwen Code is available! ${currentVersion} → ${bestUpdate.latest}`;
-        return {
-          message,
-          update: { ...bestUpdate, current: currentVersion },
-        };
+      if (resp.ok) {
+        const remote = (await resp.json()) as { version?: string };
+        latest = remote.version;
       }
-    } else {
-      const updateInfo = await createNotifier('latest').fetchInfo();
+    } finally {
+      clearTimeout(timeout);
+    }
 
-      if (updateInfo && semver.gt(updateInfo.latest, currentVersion)) {
-        const message = `Qwen Code update available! ${currentVersion} → ${updateInfo.latest}`;
-        return {
-          message,
-          update: { ...updateInfo, current: currentVersion },
-        };
-      }
+    if (
+      latest &&
+      semver.valid(latest) &&
+      semver.gt(latest, currentVersion)
+    ) {
+      const message = `Qwen Code (ExpTech fork) update available! ${currentVersion} → ${latest}\nRun: ${FORK_INSTALL_COMMAND}`;
+      return {
+        message,
+        update: {
+          name,
+          current: currentVersion,
+          latest,
+          type: 'latest',
+        } as UpdateInfo,
+      };
     }
 
     return null;
