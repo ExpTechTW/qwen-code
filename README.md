@@ -30,6 +30,27 @@
 
 ## Installation
 
+<!-- [exptech-fork] BEGIN — fork install instructions (see CLAUDE.md §Fork edits) -->
+> ### 🟢 Install this fork (ExpTech)
+>
+> This is the **ExpTech fork** ([`ExpTechTW/qwen-code`](https://github.com/ExpTechTW/qwen-code)). On top of upstream it adds:
+> - a built-in **`web_search`** tool (Anthropic-compatible providers) that returns answers with source links, plus a server-side `web_fetch` fallback for sites that block direct fetching;
+> - reliable **繁體中文（台灣）** model output (Traditional Chinese, Taiwan vocabulary) by default.
+>
+> Install **this fork** (Node.js **22 LTS** recommended — newer odd-numbered releases such as Node 26 can hit a runtime fetch issue):
+>
+> ```bash
+> # Fast (recommended) — one tarball download, no git clone:
+> npm install -g https://raw.githubusercontent.com/ExpTechTW/qwen-code/release/qwen-code-fork.tgz
+>
+> # Fallback via git ref (works, but npm full-clones the repo — slower):
+> npm install -g github:ExpTechTW/qwen-code#release
+> ```
+>
+> Run the same command again to update. Verify with `qwen --version`.
+> The instructions below install the **upstream** Qwen Code, not this fork.
+<!-- [exptech-fork] END -->
+
 **Linux / macOS:**
 
 ```bash
