@@ -222,7 +222,7 @@ export class WebSearchTool extends BaseDeclarativeTool<
       },
       true, // isOutputMarkdown
       false, // canUpdateOutput
-      true, // shouldDefer — search is infrequent; discoverable via tool search
+      false, // [exptech-fork] shouldDefer=false — web_search is always available (no tool_search needed)
       false, // alwaysLoad
       'web search query find information news current',
     );
