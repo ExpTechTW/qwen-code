@@ -60,15 +60,23 @@ Note: package `name` stays `@qwen-code/qwen-code` (install is by git URL; the na
 
 ```bash
 # from repo root, Node 22 LTS recommended (Node 26 has an unrelated runtime fetch issue)
-npm run build && npm run bundle && npm run prepare:package   # → ./dist (flat, scriptless, zero-dep)
-node scripts/build-release-branch.mjs                        # → push ./dist contents to the `release` branch
+node scripts/build-release-branch.mjs --push
+# (runs build → bundle → prepare:package, strips dist/web-shell, packs the
+#  qwen-code-fork.tgz tarball, and force-pushes an orphan `release` branch)
 ```
 
-Consumers install with **no build / no patch-package**:
+The script publishes the `release` branch with the bulky `web-shell` SPA stripped
+(so `qwen serve`'s web UI is NOT in the release build — build from source if needed).
+
+Consumers install with **no build / no patch-package**. Two paths:
 ```bash
+# FAST (recommended) — one tarball download, NO git clone:
+npm i -g https://raw.githubusercontent.com/ExpTechTW/qwen-code/release/qwen-code-fork.tgz
+
+# git fallback — works, but npm full-clones the repo (slow):
 npm i -g github:ExpTechTW/qwen-code#release
 ```
-(`npm i -g github:ExpTechTW/qwen-code` — i.e. `main` — FAILS by design: `postinstall: patch-package` + heavy `prepare`. Always tell users the `#release` ref.)
+(`npm i -g github:ExpTechTW/qwen-code` — i.e. `main` — FAILS by design: `postinstall: patch-package` + heavy `prepare`. Never give users the bare ref.) The in-app updater (`fork-config.ts` → `FORK_INSTALL_COMMAND`) uses the FAST tarball URL.
 
 ## After merging upstream (`git merge upstream/main`)
 

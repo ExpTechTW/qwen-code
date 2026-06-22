@@ -15,11 +15,15 @@ export const FORK_REPO = 'ExpTechTW/qwen-code';
 /** Branch that holds the prebuilt, scriptless package (consumer-installable). */
 export const FORK_RELEASE_REF = 'release';
 
-/** npm git-install spec for the prebuilt release branch. */
+/** npm git-install spec for the prebuilt release branch (slow: npm full-clones the repo). */
 export const FORK_INSTALL_REF = `github:${FORK_REPO}#${FORK_RELEASE_REF}`;
 
-/** The command a user runs to install / update the fork. */
-export const FORK_INSTALL_COMMAND = `npm install -g ${FORK_INSTALL_REF}`;
+/** Prebuilt npm tarball published on the release branch (fast: one download, no git clone). */
+export const FORK_RELEASE_TARBALL_NAME = 'qwen-code-fork.tgz';
+export const FORK_RELEASE_TARBALL_URL = `https://raw.githubusercontent.com/${FORK_REPO}/${FORK_RELEASE_REF}/${FORK_RELEASE_TARBALL_NAME}`;
+
+/** The command a user runs to install / update the fork — the fast tarball path. */
+export const FORK_INSTALL_COMMAND = `npm install -g ${FORK_RELEASE_TARBALL_URL}`;
 
 /** Base URL for fork GitHub release assets (standalone binaries). */
 export const FORK_GITHUB_RELEASE_BASE = `https://github.com/${FORK_REPO}/releases/download`;
