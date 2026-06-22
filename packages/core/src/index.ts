@@ -231,6 +231,19 @@ export * from './services/shellExecutionService.js';
 export * from './services/monitorRegistry.js';
 export * from './services/backgroundShellRegistry.js';
 export * from './agents/workflow-run-registry.js';
+export * from './agents/workflow-snapshot.js';
+export {
+  listSavedWorkflows,
+  resolveSavedWorkflowScript,
+  saveWorkflowScript,
+  validateWorkflowName,
+  getSavedWorkflowDirs,
+  WORKFLOW_NAME_PATTERN,
+  type SavedWorkflowEntry,
+  type SavedWorkflowSource,
+  type ResolvedSavedWorkflow,
+  type WorkflowSaveResult,
+} from './agents/runtime/workflow-saved.js';
 export * from './services/toolUseSummary.js';
 export * from './services/usageHistoryService.js';
 export * from './utils/bareMode.js';
@@ -325,6 +338,8 @@ export {
   logModelSlashCommand,
   logPromptSuggestion,
   logSpeculation,
+  logWorkflowKeyword,
+  logWorkflowRun,
 } from './telemetry/loggers.js';
 export {
   AuthEvent,
@@ -338,6 +353,8 @@ export {
   ModelSlashCommandEvent,
   PromptSuggestionEvent,
   SpeculationEvent,
+  WorkflowKeywordEvent,
+  WorkflowRunEvent,
 } from './telemetry/types.js';
 
 // ============================================================================
