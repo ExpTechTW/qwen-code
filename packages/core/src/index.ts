@@ -154,6 +154,9 @@ export type {
   TodoWriteParams,
 } from './tools/todoWrite.js';
 export type { WebFetchTool, WebFetchToolParams } from './tools/web-fetch.js';
+// [exptech-fork] web_search tool export — see CLAUDE.md §Fork edits
+export { WebSearchTool } from './tools/web-search.js';
+export type { WebSearchToolParams } from './tools/web-search.js';
 export type { WriteFileTool, WriteFileToolParams } from './tools/write-file.js';
 export type {
   ArtifactTool,

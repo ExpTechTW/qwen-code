@@ -1435,6 +1435,11 @@ export async function loadCliConfig(
       outputLanguageFilePath = projectOutputLanguagePath;
     } else if (fs.existsSync(globalOutputLanguagePath)) {
       outputLanguageFilePath = globalOutputLanguagePath;
+    } else {
+      // [exptech-fork] always resolve to the global path even before the file
+      // is written, so the directive written during startup init is honored on
+      // the very first run (main-chat + side-query). See CLAUDE.md §Fork edits.
+      outputLanguageFilePath = globalOutputLanguagePath;
     }
   }
 

@@ -31,6 +31,8 @@ export const ToolNames = {
   EXIT_PLAN_MODE: 'exit_plan_mode',
   ENTER_PLAN_MODE: 'enter_plan_mode',
   WEB_FETCH: 'web_fetch',
+  // [exptech-fork] web_search tool — see CLAUDE.md §Fork edits
+  WEB_SEARCH: 'web_search',
   LS: 'list_directory',
   LSP: 'lsp',
   ASK_USER_QUESTION: 'ask_user_question',
@@ -80,6 +82,8 @@ export const ToolDisplayNames = {
   EXIT_PLAN_MODE: 'ExitPlanMode',
   ENTER_PLAN_MODE: 'EnterPlanMode',
   WEB_FETCH: 'WebFetch',
+  // [exptech-fork] web_search tool — see CLAUDE.md §Fork edits
+  WEB_SEARCH: 'WebSearch',
   LS: 'ListFiles',
   LSP: 'Lsp',
   ASK_USER_QUESTION: 'AskUserQuestion',

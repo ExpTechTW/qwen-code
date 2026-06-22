@@ -13,10 +13,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Storage } from '@qwen-code/qwen-code-core';
-import {
-  detectSystemLanguage,
-  getLanguageNameFromLocale,
-} from '../i18n/index.js';
+// [exptech-fork] detectSystemLanguage dropped — fork defaults output to zh-TW (see CLAUDE.md §Fork edits)
+import { getLanguageNameFromLocale } from '../i18n/index.js';
 import { SUPPORTED_LANGUAGES } from '../i18n/languages.js';
 
 const LLM_OUTPUT_LANGUAGE_RULE_FILENAME = 'output-language.md';
@@ -39,6 +37,22 @@ export function isAutoLanguage(value: string | undefined | null): boolean {
  */
 export function normalizeOutputLanguage(language: string): string {
   const normalized = language.trim().replace(/_/g, '-').toLowerCase();
+  // [exptech-fork] BEGIN — force an explicit Traditional-Chinese (Taiwan) directive
+  // so the model replies in 繁體中文(台灣用語) instead of defaulting to Simplified.
+  // (Plain "中文"/zh stays Simplified by design.) See CLAUDE.md §Fork edits.
+  if (
+    normalized === 'zh-tw' ||
+    normalized.startsWith('zh-tw') ||
+    normalized === 'zh-hant' ||
+    normalized.startsWith('zh-hant') ||
+    normalized === 'traditional chinese' ||
+    normalized === 'traditional-chinese' ||
+    language.includes('繁體') ||
+    language.includes('繁中')
+  ) {
+    return '繁體中文（台灣用語，Traditional Chinese as used in Taiwan）';
+  }
+  // [exptech-fork] END
   const knownLanguageName = SUPPORTED_LANGUAGES.find(
     (supportedLanguage) =>
       supportedLanguage.fullName.toLowerCase() === normalized,
@@ -75,8 +89,9 @@ export function resolveOutputLanguage(
   value: string | undefined | null,
 ): string {
   if (isAutoLanguage(value)) {
-    const detectedLocale = detectSystemLanguage();
-    return getLanguageNameFromLocale(detectedLocale);
+    // [exptech-fork] fork default model output is 繁體中文(台灣), not system-detected.
+    // See CLAUDE.md §Fork edits.
+    return normalizeOutputLanguage('zh-TW');
   }
   return normalizeOutputLanguage(value!);
 }

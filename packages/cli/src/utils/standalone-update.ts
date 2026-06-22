@@ -15,12 +15,14 @@ import { fetch } from 'undici';
 import * as tar from 'tar';
 import { createDebugLogger } from '@qwen-code/qwen-code-core';
 import { verifySignature } from './standalone-update-verify.js';
+// [exptech-fork] repoint standalone update assets to the fork — see CLAUDE.md §Fork edits
+import { FORK_GITHUB_RELEASE_BASE } from '../fork/fork-config.js';
 
 const debugLogger = createDebugLogger('STANDALONE_UPDATE');
 
-const OSS_BASE =
-  'https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/releases/qwen-code';
-const GITHUB_BASE = 'https://github.com/QwenLM/qwen-code/releases/download';
+// [exptech-fork] both sources point at the fork's GitHub releases (no Aliyun OSS mirror)
+const OSS_BASE = FORK_GITHUB_RELEASE_BASE;
+const GITHUB_BASE = FORK_GITHUB_RELEASE_BASE;
 const FETCH_TIMEOUT_MS = 30_000;
 const ARCHIVE_TIMEOUT_MS = 300_000; // 5 min — archives are 50–150 MB
 

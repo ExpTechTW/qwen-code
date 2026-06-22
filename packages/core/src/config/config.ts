@@ -5005,6 +5005,12 @@ export class Config {
       const { WebFetchTool } = await import('../tools/web-fetch.js');
       return new WebFetchTool(this);
     });
+    // [exptech-fork] BEGIN web_search registration — see CLAUDE.md §Fork edits
+    await registerLazy(ToolNames.WEB_SEARCH, async () => {
+      const { WebSearchTool } = await import('../tools/web-search.js');
+      return new WebSearchTool(this);
+    });
+    // [exptech-fork] END
     if (this.isArtifactEnabled()) {
       await registerLazy(ToolNames.ARTIFACT, async () => {
         const { ArtifactTool } = await import(
