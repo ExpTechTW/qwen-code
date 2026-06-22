@@ -122,6 +122,17 @@ function sanitizeForMarker(language: string): string {
  */
 function generateOutputLanguageFileContent(language: string): string {
   const safeLanguage = sanitizeForMarker(language);
+  // [exptech-fork] BEGIN — extra strictness for Traditional Chinese (Taiwan); the
+  // model otherwise slips into Simplified characters / Mainland vocabulary.
+  // See CLAUDE.md §Fork edits.
+  const traditionalClause = /繁體|traditional/i.test(language)
+    ? `
+
+## 繁體中文（台灣）嚴格規則
+- 只使用**繁體中文字**，絕對不要輸出任何簡體字（例如要寫「為、裡、著、數據、繁體」，不是「为、里、着、数据、繁体」）。
+- 使用**台灣慣用術語**：程式碼、軟體、伺服器、網路、檔案、資料夾、預設、登入、執行、變數、函式、相依套件、儲存庫、最佳化；不要用中國大陸用語（代码、软件、服务器、网络、文件、文件夹、默认、登录、运行、变量、函数、依赖、仓库、优化）。
+- 標點使用全形中文標點（，。、「」（））。`
+    : '';
   return `# Output language preference: ${language}
 <!-- ${LLM_OUTPUT_LANGUAGE_MARKER_PREFIX} ${safeLanguage} -->
 
@@ -138,7 +149,7 @@ Do **not** translate or rewrite:
 - Exact quoted text from the user (keep quotes verbatim)
 
 ## Tool / system outputs
-Raw tool/system outputs may contain fixed-format English. Preserve them verbatim, and if needed, add a short **${language}** explanation below.
+Raw tool/system outputs may contain fixed-format English. Preserve them verbatim, and if needed, add a short **${language}** explanation below.${traditionalClause}
 `;
 }
 

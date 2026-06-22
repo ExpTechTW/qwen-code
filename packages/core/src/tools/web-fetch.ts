@@ -6,6 +6,8 @@
 
 import { convert } from 'html-to-text';
 import type { Config } from '../config/config.js';
+// [exptech-fork] server-side web_fetch fallback for client-blocked sites — see CLAUDE.md §Fork edits
+import { AuthType } from '../core/contentGenerator.js';
 import { fetchWithTimeout, isPrivateIp } from '../utils/fetch.js';
 import { runSideQuery } from '../utils/sideQuery.js';
 import { ToolErrorType } from './tool-error.js';
@@ -23,6 +25,69 @@ import { createDebugLogger, type DebugLogger } from '../utils/debugLogger.js';
 
 const URL_FETCH_TIMEOUT_MS = 10000;
 const MAX_CONTENT_LENGTH = 100000;
+
+// [exptech-fork] BEGIN — server-side fetch via the Anthropic proxy's web_fetch
+// tool, used as a fallback when client-side fetch is blocked (401/403/404 etc.).
+// Only active for Anthropic-compatible providers. Returns processed text or null.
+// See CLAUDE.md §Fork edits.
+async function tryServerWebFetch(
+  config: Config,
+  url: string,
+  prompt: string,
+  signal: AbortSignal,
+): Promise<string | null> {
+  const cfg = config.getContentGeneratorConfig?.();
+  if (!cfg || cfg.authType !== AuthType.USE_ANTHROPIC) return null;
+  const baseUrl = cfg.baseUrl?.replace(/\/+$/, '');
+  const apiKey = cfg.apiKey;
+  const model = cfg.model;
+  if (!baseUrl || !apiKey) return null;
+
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  signal.addEventListener('abort', onAbort, { once: true });
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  try {
+    const resp = await fetch(`${baseUrl}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 2048,
+        tools: [{ type: 'web_fetch_20260209', name: 'web_fetch' }],
+        messages: [
+          {
+            role: 'user',
+            content: `Use the web_fetch tool to fetch ${url}, then: ${prompt}`,
+          },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as {
+      content?: Array<Record<string, unknown>>;
+    };
+    let text = '';
+    for (const block of data.content ?? []) {
+      if (block['type'] === 'text' && typeof block['text'] === 'string') {
+        text += block['text'] as string;
+      }
+    }
+    text = text.trim();
+    return text || null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+    signal.removeEventListener('abort', onAbort);
+  }
+}
+// [exptech-fork] END
 
 /**
  * Parameters for the WebFetch tool
@@ -177,6 +242,28 @@ ${textContent}
       };
     } catch (e) {
       const error = e as Error;
+      // [exptech-fork] BEGIN fall back to server-side web_fetch when the client
+      // fetch is blocked (401/403/404/etc.). See CLAUDE.md §Fork edits.
+      try {
+        const serverText = await tryServerWebFetch(
+          this.config,
+          this.params.url,
+          this.params.prompt,
+          signal,
+        );
+        if (serverText) {
+          this.debugLogger.debug(
+            `[WebFetchTool] server web_fetch fallback succeeded for ${url}`,
+          );
+          return {
+            llmContent: serverText,
+            returnDisplay: `Content from ${this.params.url} fetched via server web_fetch.`,
+          };
+        }
+      } catch {
+        // fall through to the normal error result
+      }
+      // [exptech-fork] END
       const errorMessage = `Error during fetch for ${url}: ${error.message}`;
       this.debugLogger.error(`[WebFetchTool] ${errorMessage}`, error);
       return {

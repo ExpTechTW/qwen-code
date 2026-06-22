@@ -45,8 +45,9 @@ upstream.** Read this section before changing anything fork-specific.
 | `packages/core/src/tools/tool-names.ts` | ×2 | add `WEB_SEARCH` to `ToolNames` + `ToolDisplayNames` |
 | `packages/core/src/config/config.ts` | BEGIN/END | `registerLazy(WEB_SEARCH …)` right after `WEB_FETCH` in `createToolRegistry` |
 | `packages/core/src/index.ts` | 1 | export `WebSearchTool` / `WebSearchToolParams` |
+| `packages/core/src/tools/web-fetch.ts` | import + BEGIN/END ×2 | server-side `web_fetch` fallback (proxy `web_fetch_20260209`) when client fetch is blocked (401/403/404) |
 | `packages/core/src/core/client.ts` | import + BEGIN/END | `readFileSync` import; `getOutputLanguageDirective()`; inject it into `getMainSessionSystemInstruction()` |
-| `packages/cli/src/utils/languageUtils.ts` | import + ×2 | `normalizeOutputLanguage`: map zh-TW/繁體/Traditional → explicit 繁體中文（台灣）directive; `resolveOutputLanguage`: `auto`/unset defaults to zh-TW (drops `detectSystemLanguage` import) |
+| `packages/cli/src/utils/languageUtils.ts` | import + ×3 | `normalizeOutputLanguage`: map zh-TW/繁體/Traditional → explicit 繁體中文（台灣）directive; `resolveOutputLanguage`: `auto`/unset defaults to zh-TW (drops `detectSystemLanguage` import); `generateOutputLanguageFileContent`: append strict anti-Simplified + Taiwan-vocabulary clause for Traditional Chinese |
 | `packages/cli/src/config/settingsSchema.ts` | ×2 | default `general.language` + `general.outputLanguage` → `zh-TW` (dialog default + intent; runtime default comes from `resolveOutputLanguage`) |
 | `packages/cli/src/config/config.ts` | else-branch | `outputLanguageFilePath` resolves to the global path even when the file does not exist yet, so the first-run directive is honored |
 | `packages/cli/src/utils/standalone-update.ts` | import + 2 | `OSS_BASE`/`GITHUB_BASE` → `FORK_GITHUB_RELEASE_BASE` |
