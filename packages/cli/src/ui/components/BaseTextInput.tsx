@@ -373,7 +373,13 @@ export const BaseTextInput = ({
         <Box
           flexGrow={1}
           flexDirection="column"
-          backgroundColor={theme.background.primary}
+          backgroundColor={
+            // [exptech-fork] was theme.background.primary; electerm (and other
+            // non-truecolor terminals) render it (#0b0e14, QwenDark) as a full-width
+            // grey bar across the input row. Inherit the terminal background instead.
+            // See CLAUDE.md §Fork edits.
+            undefined
+          }
         >
           {buffer.text.length === 0 && placeholder ? (
             showCursor ? (

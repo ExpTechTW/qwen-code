@@ -40,19 +40,20 @@ upstream.** Read this section before changing anything fork-specific.
 
 ## Fork edits registry (upstream files touched — reconcile these on every merge)
 
-| File | Marker | What / why |
-|---|---|---|
-| `packages/core/src/tools/tool-names.ts` | ×2 | add `WEB_SEARCH` to `ToolNames` + `ToolDisplayNames` |
-| `packages/core/src/config/config.ts` | BEGIN/END | `registerLazy(WEB_SEARCH …)` right after `WEB_FETCH` in `createToolRegistry` |
-| `packages/core/src/index.ts` | 1 | export `WebSearchTool` / `WebSearchToolParams` |
-| `packages/core/src/tools/web-fetch.ts` | import + BEGIN/END ×2 | server-side `web_fetch` fallback (proxy `web_fetch_20260209`) when client fetch is blocked (401/403/404) |
-| `packages/core/src/core/client.ts` | import + BEGIN/END | `readFileSync` import; `getOutputLanguageDirective()`; inject it into `getMainSessionSystemInstruction()` |
-| `packages/cli/src/utils/languageUtils.ts` | import + ×3 | `normalizeOutputLanguage`: map zh-TW/繁體/Traditional → explicit 繁體中文（台灣）directive; `resolveOutputLanguage`: `auto`/unset defaults to zh-TW (drops `detectSystemLanguage` import); `generateOutputLanguageFileContent`: append strict anti-Simplified + Taiwan-vocabulary clause for Traditional Chinese |
-| `packages/cli/src/config/settingsSchema.ts` | ×2 | default `general.language` + `general.outputLanguage` → `zh-TW` (dialog default + intent; runtime default comes from `resolveOutputLanguage`) |
-| `packages/cli/src/config/config.ts` | else-branch | `outputLanguageFilePath` resolves to the global path even when the file does not exist yet, so the first-run directive is honored |
-| `packages/cli/src/utils/standalone-update.ts` | import + 2 | `OSS_BASE`/`GITHUB_BASE` → `FORK_GITHUB_RELEASE_BASE` |
-| `packages/cli/src/utils/installationInfo.ts` | import + 5 | npm/pnpm/yarn/bun/sudo update commands → `FORK_INSTALL_COMMAND` |
-| `packages/cli/src/ui/utils/updateCheck.ts` | whole file | fork-owned rewrite: check `release` branch package.json version instead of npm registry |
+| File                                               | Marker                | What / why                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/src/tools/tool-names.ts`            | ×2                    | add `WEB_SEARCH` to `ToolNames` + `ToolDisplayNames`                                                                                                                                                                                                                                                             |
+| `packages/core/src/config/config.ts`               | BEGIN/END             | `registerLazy(WEB_SEARCH …)` right after `WEB_FETCH` in `createToolRegistry`                                                                                                                                                                                                                                     |
+| `packages/core/src/index.ts`                       | 1                     | export `WebSearchTool` / `WebSearchToolParams`                                                                                                                                                                                                                                                                   |
+| `packages/core/src/tools/web-fetch.ts`             | import + BEGIN/END ×2 | server-side `web_fetch` fallback (proxy `web_fetch_20260209`) when client fetch is blocked (401/403/404)                                                                                                                                                                                                         |
+| `packages/core/src/core/client.ts`                 | import + BEGIN/END    | `readFileSync` import; `getOutputLanguageDirective()`; inject it into `getMainSessionSystemInstruction()`                                                                                                                                                                                                        |
+| `packages/cli/src/utils/languageUtils.ts`          | import + ×3           | `normalizeOutputLanguage`: map zh-TW/繁體/Traditional → explicit 繁體中文（台灣）directive; `resolveOutputLanguage`: `auto`/unset defaults to zh-TW (drops `detectSystemLanguage` import); `generateOutputLanguageFileContent`: append strict anti-Simplified + Taiwan-vocabulary clause for Traditional Chinese |
+| `packages/cli/src/config/settingsSchema.ts`        | ×2                    | default `general.language` + `general.outputLanguage` → `zh-TW` (dialog default + intent; runtime default comes from `resolveOutputLanguage`)                                                                                                                                                                    |
+| `packages/cli/src/config/config.ts`                | else-branch           | `outputLanguageFilePath` resolves to the global path even when the file does not exist yet, so the first-run directive is honored                                                                                                                                                                                |
+| `packages/cli/src/utils/standalone-update.ts`      | import + 2            | `OSS_BASE`/`GITHUB_BASE` → `FORK_GITHUB_RELEASE_BASE`                                                                                                                                                                                                                                                            |
+| `packages/cli/src/utils/installationInfo.ts`       | import + 5            | npm/pnpm/yarn/bun/sudo update commands → `FORK_INSTALL_COMMAND`                                                                                                                                                                                                                                                  |
+| `packages/cli/src/ui/utils/updateCheck.ts`         | whole file            | fork-owned rewrite: check `release` branch package.json version instead of npm registry                                                                                                                                                                                                                          |
+| `packages/cli/src/ui/components/BaseTextInput.tsx` | 1                     | input-field `backgroundColor` → `undefined` (was `theme.background.primary`); QwenDark bg `#0b0e14` renders as a full-width grey bar on non-truecolor terminals (e.g. electerm) — inherit the terminal background instead                                                                                        |
 
 Note: package `name` stays `@qwen-code/qwen-code` (install is by git URL; the name is irrelevant to consumers and keeps the diff small).
 
@@ -69,6 +70,7 @@ The script publishes the `release` branch with the bulky `web-shell` SPA strippe
 (so `qwen serve`'s web UI is NOT in the release build — build from source if needed).
 
 Consumers install with **no build / no patch-package**. Two paths:
+
 ```bash
 # FAST (recommended) — one tarball download, NO git clone:
 npm i -g https://raw.githubusercontent.com/ExpTechTW/qwen-code/release/qwen-code-fork.tgz
@@ -76,6 +78,7 @@ npm i -g https://raw.githubusercontent.com/ExpTechTW/qwen-code/release/qwen-code
 # git fallback — works, but npm full-clones the repo (slow):
 npm i -g github:ExpTechTW/qwen-code#release
 ```
+
 (`npm i -g github:ExpTechTW/qwen-code` — i.e. `main` — FAILS by design: `postinstall: patch-package` + heavy `prepare`. Never give users the bare ref.) The in-app updater (`fork-config.ts` → `FORK_INSTALL_COMMAND`) uses the FAST tarball URL.
 
 ## After merging upstream (`git merge upstream/main`)
@@ -86,4 +89,3 @@ npm i -g github:ExpTechTW/qwen-code#release
 4. Sanity-check: web_search tool box appears; model replies in 繁體中文（台灣）; `node scripts/check-i18n.ts` passes.
 
 <!-- [exptech-fork] END -->
-
