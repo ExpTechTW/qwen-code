@@ -13,15 +13,13 @@
 import { AuthType } from '../core/contentGenerator.js';
 import type { Config } from '../config/config.js';
 import { ToolErrorType } from './tool-error.js';
-import type {
-  ToolInvocation,
-  ToolResult,
-} from './tools.js';
+import type { ToolInvocation, ToolResult } from './tools.js';
 import { BaseDeclarativeTool, BaseToolInvocation, Kind } from './tools.js';
 import { ToolNames, ToolDisplayNames } from './tool-names.js';
 import { createDebugLogger, type DebugLogger } from '../utils/debugLogger.js';
 
-const WEB_SEARCH_TIMEOUT_MS = 60000;
+// [exptech-fork] 120s: the Anthropic server-side web_search can take 20–50s+.
+const WEB_SEARCH_TIMEOUT_MS = 120000;
 const ANTHROPIC_VERSION = '2023-06-01';
 // Older tool-type variant; the proxies we target accept this one (the newer
 // web_search_20260209 variant is not yet supported by them).
@@ -106,7 +104,9 @@ class WebSearchToolInvocation extends BaseToolInvocation<
     const timeout = setTimeout(() => controller.abort(), WEB_SEARCH_TIMEOUT_MS);
 
     try {
-      this.debugLogger.debug(`[WebSearch] POST ${url} query="${this.params.query}"`);
+      this.debugLogger.debug(
+        `[WebSearch] POST ${url} query="${this.params.query}"`,
+      );
       const resp = await fetch(url, {
         method: 'POST',
         headers: {
@@ -133,8 +133,13 @@ class WebSearchToolInvocation extends BaseToolInvocation<
       let answer = '';
       for (const block of data.content ?? []) {
         const type = String(block['type'] ?? '');
-        if (type === 'web_search_tool_result' && Array.isArray(block['content'])) {
-          for (const item of block['content'] as Array<Record<string, unknown>>) {
+        if (
+          type === 'web_search_tool_result' &&
+          Array.isArray(block['content'])
+        ) {
+          for (const item of block['content'] as Array<
+            Record<string, unknown>
+          >) {
             if (
               item &&
               item['type'] === 'web_search_result' &&
